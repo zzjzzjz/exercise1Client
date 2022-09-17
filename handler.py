@@ -1,3 +1,4 @@
+import hashlib
 import  socket
 import time
 UDP_RECV_DATA_SIZE=1024*100#udp一次接受数据的大小
@@ -17,12 +18,20 @@ def getFileByTCP(ip,port):
     client=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     client.connect((ip,port))
     client.send(fileName.encode('utf-8'))
-    file=open(fileName,"wb")
-    i=1
-    while True:
+    data=b''
+    data,addr=client.recvfrom(1024)
+    print(data)
+    data=eval(data.decode('utf-8'))
 
+    if not data['ok']:
+        print('请求文件可能不存在')
+        client.close()
+        return
+    i=1
+    file = open(fileName, "wb")
+    while True:
         data = client.recv(1024)
-        print(i)
+        #print(i)
         i=i+1
         if not data:
             break
@@ -48,6 +57,9 @@ def getFileByUDP(ip,port):
     file = open(fileName, "wb")
     while not data['end']:
         print(id)
+        if not __testMd5OfDict(data):
+
+            continue
         if data['id']==id:#响应数据的是想要的数据
             file.write(data['fileData'])
             id=id+1
@@ -60,6 +72,21 @@ def getFileByUDP(ip,port):
 
 
 
+
+
+def __testMd5OfDict(ob:dict):#测试字典的md5值
+    try:
+
+        md5=ob['md5']
+    except:
+        print('weiweiwei')
+        return False
+    del ob['md5']
+    recMd5=hashlib.md5(str(ob).encode('utf-8')).hexdigest()
+    if md5==recMd5:
+        return True
+    else:
+        return False
 
 
     """
