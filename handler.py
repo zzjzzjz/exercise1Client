@@ -2,6 +2,7 @@ import hashlib
 import socket
 import time
 import select
+import re
 UDP_RECV_DATA_SIZE = 1024 * 100  # udp一次接受数据的大小
 
 
@@ -12,6 +13,7 @@ def getFiles(ip, port):
     print("---------------可下载文件列表---------------")
     try:
         while True:
+
             ready = client.recv(1024).decode('utf8')
             length = int(ready)
             client.send(ready.encode('utf8'))
@@ -27,10 +29,10 @@ def getFiles(ip, port):
 
 
 def getFileByTCP(ip, port):
-    filename = input("下载文件名：")
+    fileName = input("下载文件名：")
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect((ip, port))
-    client.send(filename.encode('utf-8'))
+    client.send(fileName.encode('utf-8'))
     data = b''
     data, addr = client.recvfrom(1024)
     print(data)
@@ -41,7 +43,8 @@ def getFileByTCP(ip, port):
         client.close()
         return
     i = 1
-    file = open(filename, "wb")
+    fileName=re.split('[/\\\]',fileName)[-1]
+    file = open("folder\\"+fileName, "wb")#下载文件保存在floder目录下
     while True:
         data = client.recv(1024)
         # print(i)
@@ -67,7 +70,7 @@ def getFileByUDP(ip, port):
     if not data['ok']:  # 响应信息表示错误则退出该函数
         print('文件请求错误或服务器出问题')
         return
-    file = open(fileName, "wb")
+    file = open("folder\\" + re.split('[/\\\]', fileName)[-1], "wb")  # 下载文件保存在floder目录下
     while not data['end']:
         print(id)
         if not __testMd5OfDict(data):
@@ -87,7 +90,7 @@ def __testMd5OfDict(ob: dict):  # 测试字典的md5值
 
         md5 = ob['md5']
     except:
-        print('weiweiwei')
+        print('md5值不一致')
         return False
     del ob['md5']
     recMd5 = hashlib.md5(str(ob).encode('utf-8')).hexdigest()
