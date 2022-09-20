@@ -1,8 +1,10 @@
 import hashlib
+import os
 import socket
 import time
 import select
 import re
+import sys
 UDP_RECV_DATA_SIZE = 1024 * 100  # udp一次接受数据的大小
 
 
@@ -45,15 +47,23 @@ def getFileByTCP(ip, port):
     i = 1
     fileName=re.split('[/\\\]',fileName)[-1]
     file = open("folder\\"+fileName, "wb")#下载文件保存在floder目录下
+    fileSize=data['fileSize']
     while True:
-        data = client.recv(1024)
-        # print(i)
+        data = client.recv(1024*10)
         i = i + 1
+        per = int((os.stat("folder\\" + fileName).st_size / fileSize) * 100)
+        print("进度: {}%: ".format(per),"" , end="")
+        sys.stdout.flush()
+
+
         if not data:
             break
         file.write(data)
 
     file.close()
+    print("\r", end="")
+    print("进度: {}%:\n ".format(int((os.stat("folder\\" + fileName).st_size / fileSize) * 100)), "", end="")
+
     client.close()
 
 
@@ -62,26 +72,51 @@ def getFileByUDP(ip, port):
     fileName = input("下载文件名：")
     client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     client.bind(('127.0.0.1', 5678))
-    sendData = {'fileName': fileName, 'id': id}  # 构造请求数据，包括文件名，
-    client.sendto(str(sendData).encode('utf-8'), (ip, port))
-    data, addr = client.recvfrom(UDP_RECV_DATA_SIZE)
-    print(data)
-    data = eval(data.decode('utf-8'))
-    if not data['ok']:  # 响应信息表示错误则退出该函数
-        print('文件请求错误或服务器出问题')
-        return
+
+
+
+
+    id=0
     file = open("folder\\" + re.split('[/\\\]', fileName)[-1], "wb")  # 下载文件保存在floder目录下
-    while not data['end']:
-        print(id)
-        if not __testMd5OfDict(data):
+    i=0#失败次数，超过5次判定网络有问题
+    while True:
+
+        if i>5:
+            print('请检测网络')
+            file.close()
+            return
+
+        sendData = {'fileName': fileName, 'id': id}
+        client.sendto(str(sendData).encode('utf-8'), (ip, port))
+        try:
+
+            data, addr = client.recvfrom(UDP_RECV_DATA_SIZE)
+            data = eval(data.decode('utf-8'))
+        except:
+            i=i+1
             continue
+        if not __testMd5OfDict(data):
+            i=i+1
+            continue
+        if data['ok']==False:  # 响应信息表示错误则退出该函数
+            print('\n文件不存在或服务器出问题')
+            file.close()
+            return
         if data['id'] == id:  # 响应数据的是想要的数据
             file.write(data['fileData'])
             id = id + 1
-        sendData = {'fileName': fileName, 'id': id}
-        client.sendto(str(sendData).encode('utf-8'), (ip, port))
-        data, addr = client.recvfrom(UDP_RECV_DATA_SIZE)
-        data = eval(data.decode('utf-8'))
+
+        print("\r", end="")
+        print("进度: {}%: ".format(data['per']),"" , end="")
+        if data['end']:
+            break
+        i=0
+
+
+
+
+    print("\r", end="")
+    print("进度: {}%: \n".format(data['per']), "", end="")
     file.close()
 
 
@@ -90,7 +125,6 @@ def __testMd5OfDict(ob: dict):  # 测试字典的md5值
 
         md5 = ob['md5']
     except:
-        print('md5值不一致')
         return False
     del ob['md5']
     recMd5 = hashlib.md5(str(ob).encode('utf-8')).hexdigest()
