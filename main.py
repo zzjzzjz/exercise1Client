@@ -7,7 +7,7 @@ PORT2 = 9091
 PORT3 = 9092
 if __name__ == "__main__":
     print('1----查看文件列表\n2----tcp下载文件\n3----udp下载文件\n4----退出')
-    selected = input()
+    selected = input("input: ")
     while True:
         if selected == '1':
             handler.getFiles(IP, PORT1)
@@ -21,4 +21,4 @@ if __name__ == "__main__":
             print('输入错误')
         print('-------------------------------')
         print('1----查看文件列表\n2----tcp下载文件\n3----udp下载文件\n4----退出')
-        selected = input()
+        selected = input("input: ")

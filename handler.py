@@ -1,12 +1,8 @@
 import hashlib
 import os
+import re
 import socket
 import time
-from math import ceil
-
-import select
-import re
-import sys
 
 UDP_RECV_DATA_SIZE = 1024 * 10000  # udp一次接受数据的大小
 
@@ -52,6 +48,7 @@ def getFileByTCP(ip, port):
     filepath = "folder\\" + fileName
     file = open(filepath, "wb")  # 下载文件保存在floder目录下
     fileSize = data['fileSize']
+    print('download......')
     timebefore = time.time()
     while True:
         data = client.recv(1024 * 10)
@@ -82,6 +79,7 @@ def getFileByUDP(ip, port):
     id = 0
     file = open(filepath, "wb")  # 下载文件保存在floder目录下
     i = 0  # 失败次数，超过5次判定网络有问题
+    print('download......')
     timebefore = time.time()
     while True:
 
@@ -93,7 +91,6 @@ def getFileByUDP(ip, port):
         sendData = {'fileName': fileName, 'id': id}
         client.sendto(str(sendData).encode('utf-8'), (ip, port))
         try:
-
             data, addr = client.recvfrom(UDP_RECV_DATA_SIZE)
             data = eval(data.decode('utf-8'))
         except:
